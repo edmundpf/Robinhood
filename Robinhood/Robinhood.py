@@ -683,6 +683,31 @@ class Robinhood:
             raise RH_exception.InvalidOptionId()
         return market_data
 
+    @login_required
+    def get_options_positions(self):
+        """
+        Gets options positions
+        Returns: list of options positions dictionaries
+        TO-DO: Implement tests
+        """
+        try:
+            data = self.get_url(endpoints.options_positions())
+            return data["results"] if "results" in data else []
+        except:
+            raise RH_exception.RobinhoodException()
+
+    @login_required
+    def get_options_orders(self):
+        """
+        Gets options orders
+        Returns: list of options orders dictionaries
+        TO-DO: Implement tests
+        """
+        try:
+            data = self.get_url(endpoints.options_orders())
+            return data["results"] if "results" in data else []
+        except:
+            raise RH_exception.RobinhoodException()
 
     ###########################################################################
     #                           GET FUNDAMENTALS

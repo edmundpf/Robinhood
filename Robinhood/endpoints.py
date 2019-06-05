@@ -91,6 +91,18 @@ def chain(instrumentid):
 def options(chainid, dates, option_type):
     return api_url + "/options/instruments/?chain_id={_chainid}&expiration_dates={_dates}&state=active&tradability=tradable&type={_type}".format(_chainid=chainid, _dates=dates, _type=option_type)
 
+def options_positions():
+    """
+    TO-DO: Implement tests
+    """
+    return api_url + "/options/positions/"
+
+def options_orders():
+    """
+    TO-DO: Implement tests
+    """
+    return api_url + "/options/orders/"
+
 def market_data(optionid):
     return api_url + "/marketdata/options/{_optionid}/".format(_optionid=optionid)
 
