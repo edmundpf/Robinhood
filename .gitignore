@@ -66,3 +66,6 @@ target/
 *_local.cfg
 
 .idea/
+
+# Config File
+config.json

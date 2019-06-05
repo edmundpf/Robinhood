@@ -4,12 +4,16 @@
 import logging
 import warnings
 
+import os
 from enum import Enum
 
 #External dependencies
 from six.moves.urllib.parse import unquote  # pylint: disable=E0401
 from six.moves.urllib.request import getproxies  # pylint: disable=E0401
 from six.moves import input
+
+from datatype_tools.lib import Str
+from file_tools.json_file import import_json
 
 import getpass
 import requests
@@ -87,8 +91,8 @@ class Robinhood:
 
 
     def login(self,
-              username,
-              password,
+              username=None,
+              password=None,
               mfa_code=None):
         """Save and test login info for Robinhood accounts
 
@@ -101,12 +105,17 @@ class Robinhood:
 
         """
 
-        self.username = username
+        config = import_json('../data/config.json', path=os.path.abspath(__file__))
+
+        self.username = username if username is not None else config['u_n'].b64_dec()
+        password = password if password is not None else config['p_w'].b64_dec()
+
         payload = {
             'password': password,
             'username': self.username,
             'grant_type': 'password',
-            'client_id': self.client_id
+            'client_id': self.client_id,
+            'device_token': config['d_t'].b64_dec()
         }
 
         if mfa_code:
@@ -650,12 +659,13 @@ class Robinhood:
             Returns:
                 Options Contracts (List): a list (chain) of contracts for a given underlying equity instrument
         """
-        instrument_id = self.get_url(self.quote_data(stock)["instrument"])["id"]
-        if (type(expiration_dates) == list):
-            _expiration_dates_string = ",".join(expiration_dates)
+        ticker_data = self.get_url(endpoints.chain(instrument_id))["results"]
+        if len(ticker_data) == 0:
+            chain_id = ticker_data[0]["id"]
         else:
-            _expiration_dates_string = expiration_dates
-        chain_id = self.get_url(endpoints.chain(instrument_id))["results"][0]["id"]
+            for i in range(0, len(ticker_data)):
+                if ticker_data[i]["symbol"] == stock:
+                    chain_id = ticker_data[i]["id"]
         return [contract for contract in self.get_url(endpoints.options(chain_id, _expiration_dates_string, option_type))["results"]]
 
     @login_required
