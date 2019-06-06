@@ -103,6 +103,12 @@ def options_orders():
     """
     return api_url + "/options/orders/"
 
+def options_historicals():
+    """
+    TO-DO: Implement tests
+    """
+    return api_url + "/marketdata/options/historicals/"
+
 def market_data(optionid):
     return api_url + "/marketdata/options/{_optionid}/".format(_optionid=optionid)
 

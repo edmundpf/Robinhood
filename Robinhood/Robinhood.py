@@ -12,7 +12,7 @@ from six.moves.urllib.parse import unquote  # pylint: disable=E0401
 from six.moves.urllib.request import getproxies  # pylint: disable=E0401
 from six.moves import input
 
-from datatype_tools.lib import Str
+from datatype_tools.lib import *
 from file_tools.json_file import import_json
 
 import getpass
@@ -595,12 +595,12 @@ class Robinhood:
         return res['results'][0]
 
 
-    def get_url(self, url):
+    def get_url(self, url, params=None):
         """
             Flat wrapper for fetching URL directly
         """
 
-        return self.session.get(url, timeout=15).json()
+        return self.session.get(url, params=params, timeout=15).json()
 
     def get_popularity(self, stock=''):
         """Get the number of robinhood users who own the given stock
@@ -651,7 +651,7 @@ class Robinhood:
     #                           GET OPTIONS INFO
     ###########################################################################
 
-    def get_options(self, stock, expiration_dates, option_type):
+    def get_options(self, stock, expiration_dates, option_type='call'):
         """Get a list (chain) of options contracts belonging to a particular stock
 
             Args: stock ticker (str), list of expiration dates to filter on (YYYY-MM-DD), and whether or not its a 'put' or a 'call' option type (str).
@@ -659,6 +659,11 @@ class Robinhood:
             Returns:
                 Options Contracts (List): a list (chain) of contracts for a given underlying equity instrument
         """
+        instrument_id = self.get_url(self.quote_data(stock)["instrument"])["id"]
+        if (type(expiration_dates) == list):
+            _expiration_dates_string = ",".join(expiration_dates)
+        else:
+            _expiration_dates_string = expiration_dates
         ticker_data = self.get_url(endpoints.chain(instrument_id))["results"]
         if len(ticker_data) == 0:
             chain_id = ticker_data[0]["id"]
@@ -667,6 +672,60 @@ class Robinhood:
                 if ticker_data[i]["symbol"] == stock:
                     chain_id = ticker_data[i]["id"]
         return [contract for contract in self.get_url(endpoints.options(chain_id, _expiration_dates_string, option_type))["results"]]
+
+    @login_required
+    def find_option(self, stock, expiration_dates, option_type='call', strike_type='itm', strike_count=0, extended_price=True):
+        """
+        Find nearest options ITM or OTM by n strike_count
+        Args: stock ticker (str), list of expiration dates to filter on (YYYY-MM-DD), and whether or not its a 'put' or a 'call' option type (str),
+        strike_type ('itm', 'otm'), extended_price (True for extended hours price, stike_count (int), False for last close price).
+        Returns: dict
+        TO-DO: Implement Tests
+        """
+        options = self.get_options(stock=stock, expiration_dates=expiration_dates, option_type=option_type).sort_by_key_val(key='strike_price', sort_type='float')
+        current_quote = float(self.quote_data(stock)['last_extended_hours_trade_price'] if extended_price else self.quote_data(stock)['last_trade_price']).round(2)
+
+        for i in range(len(options)):
+            if float(options[i]['strike_price']).round(2) == float(current_quote).round(2):
+                break_point = {'equal': True, 'index': i}
+                break
+            elif float(options[i]['strike_price']) > float(current_quote):
+                break_point = {'equal': False, 'index': i}
+                break
+
+        if option_type == 'call' and strike_type == 'otm':
+            if break_point['equal']:
+                strike_index = break_point['index'] + strike_count + 1
+            else:
+                strike_index = break_point['index'] + strike_count
+
+        elif option_type == 'call' and strike_type == 'itm':
+            if break_point['equal']:
+                strike_index = break_point['index'] - strike_count
+            else:
+                strike_index = break_point['index'] - strike_count - 1
+
+        elif option_type == 'put' and strike_type == 'otm':
+            strike_index = break_point['index'] - strike_count - 1
+
+        elif option_type == 'put' and strike_type == 'itm':
+            strike_index = break_point['index'] + strike_count
+
+        return options[strike_index]
+
+    @login_required
+    def find_option_by_strike(self, stock, expiration_dates, strike, option_type='call'):
+        """
+        Find nearest options ITM or OTM by n strike_count
+        Args: stock ticker (str), list of expiration dates to filter on (YYYY-MM-DD), strike price (float), and whether or not its a 'put' or a 'call' option type (str),
+        Returns: dict
+        TO-DO: Implement Tests
+        """
+        options = self.get_options(stock=stock, expiration_dates=expiration_dates, option_type=option_type)
+        for i in range(len(options)):
+            if float(options[i]['strike_price']).round(2) == float(strike).round(2):
+                return options[i]
+        return {}
 
     @login_required
     def get_option_market_data(self, optionid):
@@ -706,6 +765,33 @@ class Robinhood:
         try:
             data = self.get_url(endpoints.options_orders())
             return data["results"] if "results" in data else []
+        except:
+            raise RH_exception.RobinhoodException()
+
+    @login_required
+    def get_options_historicals(self, urls, span="year"):
+        """
+        Gets options historicals
+        Args: list of urls or single url, span ('day', 'week', 'year', '5year')
+        Returns: list of options historicals
+        TO-DO: Implement tests
+        """
+        span_interval_pairs = {
+            "day": "5minute",
+            "week": "10minute",
+            "year": "day",
+            "5year": "week"
+        }
+        if span not in span_interval_pairs.keys():
+            span = "year"
+        if (type(urls) != list):
+            urls = [urls]
+        try:
+            return self.get_url(endpoints.options_historicals(), params={
+                    "span": span,
+                    "interval": span_interval_pairs[span],
+                    "instruments": ",".join(urls)
+                })["results"][0]["data_points"]
         except:
             raise RH_exception.RobinhoodException()
 
