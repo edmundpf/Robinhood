@@ -581,6 +581,13 @@ class Robinhood:
 
         return result
 
+    def consume_pages(self, data):
+
+        pages = data['results']
+        while data['next']:
+            pages.extend(self.get_url(data['next'])['results'])
+        return pages
+
     def get_account(self):
         """Fetch account information
 
@@ -593,7 +600,6 @@ class Robinhood:
         res = res.json()
 
         return res['results'][0]
-
 
     def get_url(self, url, params=None):
         """
@@ -750,8 +756,7 @@ class Robinhood:
         TO-DO: Implement tests
         """
         try:
-            data = self.get_url(endpoints.options_positions())
-            return data["results"] if "results" in data else []
+            return self.get_url(endpoints.options_positions()) or {}
         except:
             raise RH_exception.RobinhoodException()
 
@@ -763,8 +768,7 @@ class Robinhood:
         TO-DO: Implement tests
         """
         try:
-            data = self.get_url(endpoints.options_orders())
-            return data["results"] if "results" in data else []
+            return self.get_url(endpoints.options_orders()) or {}
         except:
             raise RH_exception.RobinhoodException()
 
@@ -791,7 +795,7 @@ class Robinhood:
                     "span": span,
                     "interval": span_interval_pairs[span],
                     "instruments": ",".join(urls)
-                })["results"][0]["data_points"]
+                })
         except:
             raise RH_exception.RobinhoodException()
 
