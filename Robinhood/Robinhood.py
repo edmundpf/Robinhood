@@ -657,10 +657,11 @@ class Robinhood:
     #                           GET OPTIONS INFO
     ###########################################################################
 
-    def get_options(self, stock, expiration_dates, option_type='call'):
+    def get_options(self, stock, expiration_dates, option_type='call', include_expired=False):
         """Get a list (chain) of options contracts belonging to a particular stock
 
-            Args: stock ticker (str), list of expiration dates to filter on (YYYY-MM-DD), and whether or not its a 'put' or a 'call' option type (str).
+            Args: stock ticker (str), list of expiration dates to filter on (YYYY-MM-DD), and whether or not its a 'put' or a 'call' option type (str),
+            include_expired (boolean) to include expired options.
 
             Returns:
                 Options Contracts (List): a list (chain) of contracts for a given underlying equity instrument
@@ -677,18 +678,22 @@ class Robinhood:
             for i in range(0, len(ticker_data)):
                 if ticker_data[i]["symbol"] == stock:
                     chain_id = ticker_data[i]["id"]
-        return [contract for contract in self.get_url(endpoints.options(chain_id, _expiration_dates_string, option_type))["results"]]
+        if not include_expired:
+            return [contract for contract in self.get_url(endpoints.options(chain_id, _expiration_dates_string, option_type))["results"]]
+        else:
+            return [contract for contract in self.get_url(endpoints.expired_options(chain_id, _expiration_dates_string, option_type))["results"]]
 
     @login_required
-    def find_option(self, stock, expiration_dates, option_type='call', strike_type='itm', strike_count=0, extended_price=True):
+    def find_option(self, stock, expiration_dates, option_type='call', include_expired=False, strike_type='itm', strike_count=0, extended_price=True):
         """
         Find nearest options ITM or OTM by n strike_count
         Args: stock ticker (str), list of expiration dates to filter on (YYYY-MM-DD), and whether or not its a 'put' or a 'call' option type (str),
-        strike_type ('itm', 'otm'), extended_price (True for extended hours price, stike_count (int), False for last close price).
+        include_expired (boolean) to include expired options, strike_type ('itm', 'otm'),
+        extended_price (True for extended hours price, stike_count (int), False for last close price).
         Returns: dict
         TO-DO: Implement Tests
         """
-        options = self.get_options(stock=stock, expiration_dates=expiration_dates, option_type=option_type).sort_by_key_val(key='strike_price', sort_type='float')
+        options = self.get_options(stock=stock, expiration_dates=expiration_dates, option_type=option_type, include_expired=include_expired).sort_by_key_val(key='strike_price', sort_type='float')
         current_quote = float(self.quote_data(stock)['last_extended_hours_trade_price'] if extended_price else self.quote_data(stock)['last_trade_price']).round(2)
 
         for i in range(len(options)):
@@ -773,7 +778,7 @@ class Robinhood:
             raise RH_exception.RobinhoodException()
 
     @login_required
-    def get_options_historicals(self, urls, span="year"):
+    def get_options_historicals(self, urls, span="year", remove_interpolated=False):
         """
         Gets options historicals
         Args: list of urls or single url, span ('day', 'week', 'year', '5year')
@@ -783,6 +788,7 @@ class Robinhood:
         span_interval_pairs = {
             "day": "5minute",
             "week": "10minute",
+            "month": "hour",
             "year": "day",
             "5year": "week"
         }
@@ -791,11 +797,20 @@ class Robinhood:
         if (type(urls) != list):
             urls = [urls]
         try:
-            return self.get_url(endpoints.options_historicals(), params={
-                    "span": span,
-                    "interval": span_interval_pairs[span],
-                    "instruments": ",".join(urls)
-                })
+            data = self.get_url(endpoints.options_historicals(), params={
+                "span": span,
+                "interval": span_interval_pairs[span],
+                "instruments": ",".join(urls)
+            })['results'][0]['data_points']
+            if not remove_interpolated:
+                return data
+            else:
+                non_interpolated = []
+                for point in data:
+                    if not point['interpolated']:
+                        non_interpolated.append(point)
+                return(non_interpolated)
+
         except:
             raise RH_exception.RobinhoodException()
 

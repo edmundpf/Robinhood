@@ -91,6 +91,9 @@ def chain(instrumentid):
 def options(chainid, dates, option_type):
     return api_url + "/options/instruments/?chain_id={_chainid}&expiration_dates={_dates}&state=active&tradability=tradable&type={_type}".format(_chainid=chainid, _dates=dates, _type=option_type)
 
+def expired_options(chainid, dates, option_type):
+    return api_url + "/options/instruments/?chain_id={_chainid}&expiration_dates={_dates}&state=expired&type={_type}".format(_chainid=chainid, _dates=dates, _type=option_type)
+
 def options_positions():
     """
     TO-DO: Implement tests
