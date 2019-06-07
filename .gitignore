@@ -69,6 +69,3 @@ target/
 
 # Config File
 config.json
-
-#Data
-instruments.db
