@@ -1,0 +1,17 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+
+[packages]
+requests = ">=2.13.0,<=2.18.4"
+six = "<=1.11.0,>=1.10.0"
+datatype-tools = "*"
+file-tools = "*"
+python-dateutil = "*"
+print-tools = "*"
+
+[requires]
+python_version = "3.7"
