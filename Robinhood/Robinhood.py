@@ -684,17 +684,29 @@ class Robinhood:
             return [contract for contract in self.get_url(endpoints.expired_options(chain_id, _expiration_dates_string, option_type))["results"]]
 
     @login_required
-    def find_option(self, stock, expiration_dates, option_type='call', include_expired=False, strike_type='itm', strike_count=0, extended_price=True):
+    def find_option(self, stock, expiration_dates,
+            option_type='call', quote_date=None, include_expired=False,
+            strike_type='itm', strike_count=0, extended_price=True):
         """
         Find nearest options ITM or OTM by n strike_count
         Args: stock ticker (str), list of expiration dates to filter on (YYYY-MM-DD), and whether or not its a 'put' or a 'call' option type (str),
-        include_expired (boolean) to include expired options, strike_type ('itm', 'otm'),
+        quote_date (string) for historicals, include_expired (boolean) to include expired options, strike_type ('itm', 'otm'),
         extended_price (True for extended hours price, stike_count (int), False for last close price).
         Returns: dict
         TO-DO: Implement Tests
         """
-        options = self.get_options(stock=stock, expiration_dates=expiration_dates, option_type=option_type, include_expired=include_expired).sort_by_key_val(key='strike_price', sort_type='float')
-        current_quote = float(self.quote_data(stock)['last_extended_hours_trade_price'] if extended_price else self.quote_data(stock)['last_trade_price']).round(2)
+        options = self.get_options(stock=stock, expiration_dates=expiration_dates,
+            option_type=option_type, include_expired=include_expired).sort_by_key_val(key='strike_price', sort_type='float')
+        if not include_expired and quote_date == None:
+            if extended_price:
+                current_quote = float(self.quote_data(stock)['last_extended_hours_trade_price']).round(2)
+            else:
+                current_quote = float(self.quote_data(stock)['last_trade_price']).round(2)
+        else if include_expired and quote_data != None:
+            quotes = self.get_historical_quotes(stock=stock, interval='day', span='year')['historicals']:
+            for quote in quotes:
+                if quote['begins_at'][:10] == quote_date:
+                    current_quote = float(quote['open_price']).round(2)
 
         for i in range(len(options)):
             if float(options[i]['strike_price']).round(2) == float(current_quote).round(2):

@@ -1,0 +1,1 @@
+rsync -a --exclude-from sync_exclude . root@142.93.67.106:/home/scripts/Robinhood
