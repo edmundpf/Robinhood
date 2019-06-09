@@ -1,1 +1,0 @@
-rsync -a --exclude-from sync_exclude --no-perms --no-owner --no-group --chmod=-x . root@142.93.67.106:/home/scripts/rh_options/Robinhood
