@@ -702,8 +702,8 @@ class Robinhood:
                 current_quote = float(self.quote_data(stock)['last_extended_hours_trade_price']).round(2)
             else:
                 current_quote = float(self.quote_data(stock)['last_trade_price']).round(2)
-        else if include_expired and quote_data != None:
-            quotes = self.get_historical_quotes(stock=stock, interval='day', span='year')['historicals']:
+        elif include_expired and quote_data != None:
+            quotes = self.get_historical_quotes(stock=stock, interval='day', span='year')['historicals']
             for quote in quotes:
                 if quote['begins_at'][:10] == quote_date:
                     current_quote = float(quote['open_price']).round(2)

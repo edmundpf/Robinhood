@@ -44,8 +44,8 @@ def get_trades(options):
                 options_trades[option_id] = {
                     'amt': amt,
                     'symbol': option['chain_symbol'],
-                    'date': time['date'],
-                    'time': time['time'],
+                    'date': time['date'] if 'date' in time else '',
+                    'time': time['time'] if 'time' in time else '',
                     'url': url
                 }
             else:
@@ -71,7 +71,7 @@ def get_trades(options):
         date = options_trades[trade]['expiration_date']
         symbol = options_trades[trade]['symbol']
         option_type = options_trades[trade]['option_type']
-        amt = options_trades[trade]['amt'].round(2)
+        amt = float(options_trades[trade]['amt']).round(2)
         p.bullet(p.format(f'{symbol} {date} {option_type}: {amt_color}{amt}', ret=True))
     net = gains + losses
     return gains, losses, net, wins, defeats

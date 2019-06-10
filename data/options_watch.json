@@ -1,0 +1,8 @@
+[
+    {
+        "ticker": "MSFT",
+        "date": "2019-06-14",
+        "type": "call",
+        "strike": 135
+    }
+]
