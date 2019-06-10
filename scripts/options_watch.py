@@ -28,7 +28,6 @@ try:
         spy_price = float(spy['last_trade_price']).round(3) if cur_time >= 930 else float(spy['last_extended_hours_trade_price']).round(3)
         print_str = f'{time_stamp} - SPY ({spy_price})\n'
         lines = 1
-        runs += 1
         for i, option in enumerate(options):
             opt = t.find_option_by_strike(option['ticker'], option['date'], option['strike'], option['type'])
             opt_data = t.get_option_market_data(opt['id'])
@@ -49,10 +48,11 @@ try:
                 lines += 1
             else:
                 print_str += f'{opt_text} | {mark} | {quote} | Ask: {ask_price} - {ask_count} | Bid: {bid_price} - {bid_count} | Vol: {volume} | Δ{delta} | θ{theta}'
-            if runs == 1:
-                flush_print(print_str, lines, flush=False)
-            else:
-                flush_print(print_str, lines)
+        if runs == 0:
+            flush_print(print_str, lines, flush=False)
+        else:
+            flush_print(print_str, lines)
+        runs += 1
         time.sleep(3)
 except KeyboardInterrupt:
     flush_print('', lines)
