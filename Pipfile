@@ -12,6 +12,3 @@ datatype-tools = "*"
 file-tools = "*"
 python-dateutil = "*"
 print-tools = "*"
-
-[requires]
-python_version = "3.7"
