@@ -44,10 +44,10 @@ try:
             theta = float(opt_data['theta']).round(3)
             volume = opt_data['volume']
             if i != (len(options) - 1):
-                print_str += f'{opt_text} | {mark} | {quote} | Ask: {ask_price} - {ask_count} | Bid: {bid_price} - {bid_count} | Vol: {volume} | Δ{delta} | θ{theta}\n'
+                print_str += f'{opt_text} | {mark} | {quote} | Bid: {bid_price} - {bid_count} | Ask: {ask_price} - {ask_count} | Vol: {volume} | Δ:{delta} | θ:{theta}\n'
                 lines += 1
             else:
-                print_str += f'{opt_text} | {mark} | {quote} | Ask: {ask_price} - {ask_count} | Bid: {bid_price} - {bid_count} | Vol: {volume} | Δ{delta} | θ{theta}'
+                print_str += f'{opt_text} | {mark} | {quote} | Bid: {bid_price} - {bid_count} | Ask: {ask_price} - {ask_count} | Vol: {volume} | Δ:{delta} | θ:{theta}'
         if runs == 0:
             flush_print(print_str, lines, flush=False)
         else:
