@@ -13,7 +13,7 @@ from six.moves.urllib.request import getproxies  # pylint: disable=E0401
 from six.moves import input
 
 from datatype_tools.lib import *
-from file_tools.json_file import import_json
+from file_tools.json_file import import_json, export_json
 
 import getpass
 import requests
@@ -105,40 +105,55 @@ class Robinhood:
 
         """
 
-        config = import_json('../data/config.json', path=os.path.abspath(__file__))
+        cur_path = os.path.abspath(__file__)
+        config = import_json('../data/config.json', path=cur_path)
+        auth_data = import_json('../data/login_data.json', path=cur_path)
 
         self.username = username if username is not None else config['u_n'].b64_dec()
-        password = password if password is not None else config['p_w'].b64_dec()
 
-        payload = {
-            'password': password,
-            'username': self.username,
-            'grant_type': 'password',
-            'client_id': self.client_id,
-            'device_token': config['d_t'].b64_dec()
-        }
+        if 'Bearer' not in auth_data['auth']:
 
-        if mfa_code:
-            payload['mfa_code'] = mfa_code
-        try:
-            res = self.session.post(endpoints.login(), data=payload, timeout=15)
-            res.raise_for_status()
-            data = res.json()
-        except requests.exceptions.HTTPError:
-            raise RH_exception.LoginFailed()
+            password = password if password is not None else config['p_w'].b64_dec()
 
-        if 'mfa_required' in data.keys():           # pragma: no cover
-            mfa_code = input("MFA: ")
-            return self.login(username,password,mfa_code)
+            payload = {
+                'password': password,
+                'username': self.username,
+                'grant_type': 'password',
+                'client_id': self.client_id,
+                'device_token': config['d_t'].b64_dec()
+            }
 
-        if 'access_token' in data.keys() and 'refresh_token' in data.keys():
-            self.auth_token = data['access_token']
-            self.refresh_token = data['refresh_token']
-            self.headers['Authorization'] = 'Bearer ' + self.auth_token
+            if mfa_code:
+                payload['mfa_code'] = mfa_code
+            try:
+                res = self.session.post(endpoints.login(), data=payload, timeout=15)
+                res.raise_for_status()
+                data = res.json()
+            except requests.exceptions.HTTPError:
+                raise RH_exception.LoginFailed()
+
+            if 'mfa_required' in data.keys():           # pragma: no cover
+                mfa_code = input("MFA: ")
+                return self.login(username,password,mfa_code)
+
+            if 'access_token' in data.keys() and 'refresh_token' in data.keys():
+                self.auth_token = data['access_token']
+                self.refresh_token = data['refresh_token']
+                self.headers['Authorization'] = 'Bearer ' + self.auth_token
+                export_json ({
+                    'access_token': self.auth_token,
+                    'refresh_token': self.refresh_token,
+                    'auth': self.headers['Authorization']
+                }, '../data/login_data.json', path=cur_path, indent=4)
+                return True
+
+            return False
+
+        else:
+            self.auth_token = auth_data['access_token']
+            self.refresh_token = auth_data['refresh_token']
+            self.headers['Authorization'] = auth_data['auth']
             return True
-
-        return False
-
 
     def logout(self):
         """Logout from Robinhood

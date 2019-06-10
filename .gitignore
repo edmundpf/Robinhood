@@ -70,5 +70,8 @@ target/
 # Config File
 config.json
 
+# Login Data File
+login_data.json
+
 # Sync File
 sync
