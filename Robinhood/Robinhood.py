@@ -5,6 +5,7 @@ import logging
 import warnings
 
 import os
+import time
 from enum import Enum
 
 #External dependencies
@@ -93,7 +94,8 @@ class Robinhood:
     def login(self,
               username=None,
               password=None,
-              mfa_code=None):
+              mfa_code=None,
+              use_cookies=True):
         """Save and test login info for Robinhood accounts
 
         Args:
@@ -111,7 +113,7 @@ class Robinhood:
 
         self.username = username if username is not None else config['u_n'].b64_dec()
 
-        if 'Bearer' not in auth_data['auth']:
+        if 'Bearer' not in auth_data['auth'] or not use_cookies:
 
             password = password if password is not None else config['p_w'].b64_dec()
 
@@ -599,8 +601,13 @@ class Robinhood:
     def consume_pages(self, data):
 
         pages = data['results']
-        while data['next']:
-            pages.extend(self.get_url(data['next'])['results'])
+        while data['next'] and data['next'] not in [None, 'None']:
+            # print(f"Getting next page: {data['next']}")
+            data = self.get_url(data['next'])
+            if 'results' in data:
+                pages.extend(data['results'])
+            elif 'detail' in data and 'throttled' in data['detail']:
+                print(f"Error: {data['detail']}")
         return pages
 
     def get_account(self):

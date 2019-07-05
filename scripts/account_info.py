@@ -89,7 +89,7 @@ account_info = t.get_account()
 margin = account_info['margin_balances']
 transfers = t.consume_pages(t.get_transfers())
 options = t.consume_pages(t.get_options_orders())
-# orders = t.consume_pages(t.order_history())
+orders = t.consume_pages(t.order_history())
 
 withdraws, deposits = get_transfers(transfers)
 gains, losses, net, wins, defeats = get_trades(options)
